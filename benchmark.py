@@ -1,8 +1,12 @@
 import gc
 import io
+import itertools
 import os
 from time import time
+from collections import OrderedDict as od
+
 import numpy as np
+import pandas as pd
 
 
 import bloscpack as bp
@@ -33,9 +37,6 @@ def vtimeit(stmt, setup=noop, before=noop, after=noop, repeat=3, number=3):
 
     return result
 
-dataset_size = [1e4]
-ssd = '/tmp/bench'
-storage_type = [ssd]
 
 
 def drop_caches():
@@ -57,27 +58,65 @@ def make_complex_dataset(size):
     del noise
     return it
 
+def reduce(result):
+    return result.mean(axis=1).min()
+
 class BloscpackRunner(object):
+
+    def __init__(self):
+        self.name = 'bloscpack'
+        self.blosc_args = bp.DEFAULT_BLOSC_ARGS
+        self.bloscpack_args = bp.DEFAULT_BLOSCPACK_ARGS
 
     def configure(self, ndarray, storage):
         self.ndarray = ndarray
         self.storage = os.path.join(storage, 'array.blp')
 
+    def ratio(self):
+        return (float(os.path.getsize(self.storage)) /
+                (self.ndarray.size * self.ndarray.dtype.itemsize))
+
     def compress(self):
-        bp.pack_ndarray_file(self.ndarray, self.storage)
+        bp.pack_ndarray_file(self.ndarray, self.storage,
+                blosc_args=self.blosc_args,
+                bloscpack_args=self.bloscpack_args)
 
     def decompress(self):
         it = bp.unpack_ndarray_file(self.storage)
 
+ssd = '/tmp/bench'
+sd = '/mnt/sd/bench'
+dataset_sizes = od([('small', 1e4),
+                    ('medium', 1e7)])
+storage_types = od([('ssd', ssd)])
+entropy_types = od([('low', make_simple_dataset),
+                    ('medium', make_complex_dataset)])
+codecs = {'bloscpack': BloscpackRunner()}
 
-bp_runner = BloscpackRunner()
+columns = ['size',
+           'entropy',
+           'storage',
+           'codec',
+           'level',
+           'compress',
+           'decompress',
+           'decompress w/o cache'
+           'ratio'
+           ]
 
-bp_runner.configure(make_simple_dataset(dataset_size[0]), storage_type[0])
-print vtimeit(bp_runner.compress, setup=bp_runner.compress, before=drop_caches, after=sync)
-print vtimeit(bp_runner.decompress, setup=bp_runner.decompress)
-print vtimeit(bp_runner.decompress, before=drop_caches)
+sets = itertools.product(dataset_sizes, storage_types, entropy_types, codecs)
 
-bp_runner.configure(make_complex_dataset(dataset_size[0]), storage_type[0])
-print vtimeit(bp_runner.compress, before=drop_caches, after=sync)
-print vtimeit(bp_runner.decompress, setup=bp_runner.decompress)
-print vtimeit(bp_runner.decompress, before=drop_caches)
+#results = pd.DataFrame()
+
+for i, it in enumerate(sets):
+    print it
+    size, storage, entropy, codec = it
+    codec = codecs[codec]
+    codec.configure(entropy_types[entropy](dataset_sizes[size]),
+                            storage_types[storage])
+    print reduce(vtimeit(codec.compress, setup=codec.compress,
+        before=drop_caches, after=sync))
+    print reduce(vtimeit(codec.decompress, setup=codec.decompress))
+    print reduce(vtimeit(codec.decompress, before=drop_caches))
+    print codec.ratio()
+
