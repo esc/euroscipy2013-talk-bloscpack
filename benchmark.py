@@ -161,19 +161,22 @@ class ZFileRunner(AbstractRunner):
         it = jb.load(self.storage)
 
 
-
 ssd = '/tmp/bench'
 sd = '/mnt/sd/bench'
-dataset_sizes = od([('small', 1e4),
-                    ('medium', 1e7),
-                    ('large', 2e8),
-                    ])
+dataset_sizes = od([('small', 1e4),])
+                  #  ('medium', 1e7),
+                  #  ('large', 2e8),
+                  #  ])
 storage_types = od([('ssd', ssd)])
 entropy_types = od([('low', make_simple_dataset),
-                    ('medium', make_complex_dataset),
-                    ('high', make_random_dataset),
-                    ])
-codecs = {'bloscpack': BloscpackRunner()}
+                    ('medium', make_complex_dataset),])
+                   # ('high', make_random_dataset),
+                   # ])
+codecs = od([('bloscpack', BloscpackRunner()),
+             ('npz', NPZRunner()),
+             ('npy', NPYRunner()),
+             ('zfile', ZFileRunner()),
+             ])
 
 columns = ['size',
            'entropy',
