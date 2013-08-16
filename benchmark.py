@@ -6,6 +6,7 @@ from time import time
 from collections import OrderedDict as od
 
 import numpy as np
+from numpy.random import randn
 import pandas as pd
 
 
@@ -58,6 +59,9 @@ def make_complex_dataset(size):
     del noise
     return it
 
+def make_random_dataset(size):
+    return randn(size)
+
 def reduce(result):
     return result.mean(axis=1).min()
 
@@ -67,6 +71,19 @@ class BloscpackRunner(object):
         self.name = 'bloscpack'
         self.blosc_args = bp.DEFAULT_BLOSC_ARGS
         self.bloscpack_args = bp.DEFAULT_BLOSCPACK_ARGS
+        self.bloscpack_args = {'offsets': False,
+                               'checksum': 'None',
+                               'max_app_chunks': 0}
+
+    def clean(self):
+        if os.path.isfile(self.storage):
+            os.remove(self.storage)
+        sync()
+        drop_caches
+
+    def deconfigure(self):
+        del self.ndarray
+        gc.collect()
 
     def configure(self, ndarray, storage):
         self.ndarray = ndarray
@@ -87,10 +104,14 @@ class BloscpackRunner(object):
 ssd = '/tmp/bench'
 sd = '/mnt/sd/bench'
 dataset_sizes = od([('small', 1e4),
-                    ('medium', 1e7)])
+                    ('medium', 1e7),
+                    ('large', 2e8),
+                    ])
 storage_types = od([('ssd', ssd)])
 entropy_types = od([('low', make_simple_dataset),
-                    ('medium', make_complex_dataset)])
+                    ('medium', make_complex_dataset),
+                    ('high', make_random_dataset),
+                    ])
 codecs = {'bloscpack': BloscpackRunner()}
 
 columns = ['size',
@@ -115,8 +136,9 @@ for i, it in enumerate(sets):
     codec.configure(entropy_types[entropy](dataset_sizes[size]),
                             storage_types[storage])
     print reduce(vtimeit(codec.compress, setup=codec.compress,
-        before=drop_caches, after=sync))
+        before=codec.clean, after=sync))
+    print codec.ratio()
+    codec.deconfigure()
     print reduce(vtimeit(codec.decompress, setup=codec.decompress))
     print reduce(vtimeit(codec.decompress, before=drop_caches))
-    print codec.ratio()
 
