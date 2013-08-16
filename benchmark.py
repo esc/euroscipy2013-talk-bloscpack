@@ -32,7 +32,6 @@ def vtimeit(stmt, setup=noop, before=noop, after=noop, repeat=3, number=3):
             toc = time()
             result[i, j] = toc - tic
 
-
             if gcold:
                 gc.enable()
 
@@ -165,15 +164,17 @@ class ZFileRunner(AbstractRunner):
 
 ssd = '/tmp/bench'
 sd = '/mnt/sd/bench'
-dataset_sizes = od([('small', 1e4),])
-                  #  ('mid', 1e7),
-                  #  ('large', 2e8),
-                  #  ])
-storage_types = od([('ssd', ssd)])
+dataset_sizes = od([('small', 1e4),
+                    ('mid', 1e7),
+                    ('large', 2e8),
+                    ])
+storage_types = od([('ssd', ssd),
+                    ('sd', sd),
+                    ])
 entropy_types = od([('low', make_simple_dataset),
-                    ('medium', make_complex_dataset),])
-                   # ('high', make_random_dataset),
-                   # ])
+                    ('medium', make_complex_dataset),
+                    ('high', make_random_dataset),
+                    ])
 codecs = od([('bloscpack', BloscpackRunner()),
              ('npz', NPZRunner()),
              ('npy', NPYRunner()),
@@ -207,7 +208,7 @@ for size in dataset_sizes:
                     sets.append((size, type_, entropy, codec, level))
 
 n = len(sets)
-colum_values =od(zip(columns, zip(*sets)))
+colum_values = od(zip(columns, zip(*sets)))
 colum_values['compress'] = np.empty(n)
 colum_values['decompress'] = np.empty(n)
 colum_values['dc_no_cache'] = np.empty(n)
@@ -215,7 +216,13 @@ colum_values['ratio'] = np.empty(n)
 
 results = pd.DataFrame(colum_values)
 
-widgets = ['Benchmark: ', pbar.Percentage(), ' ', pbar.Bar(marker='-'),
+class Counter(pbar.Widget):
+    """Displays the current count."""
+
+    def update(self, pbar):
+        return str(sets[pbar.currval])
+
+widgets = ['Benchmark: ', pbar.Percentage(), ' ', Counter() ,' ',pbar.Bar(marker='-'),
            ' ', pbar.AdaptiveETA(), ' ', ]
 pbar = pbar.ProgressBar(widgets=widgets, maxval=n).start()
 
@@ -224,12 +231,17 @@ for i, it in enumerate(sets):
     codec = codecs[codec]
     codec.configure(entropy_types[entropy](dataset_sizes[size]),
                     storage_types[storage], level)
-    results['compress'][i] = reduce(vtimeit(codec.compress, setup=codec.compress,
-                 before=codec.clean, after=sync))
+    results['compress'][i] = reduce(vtimeit(codec.compress,
+                                    setup=codec.compress,
+                                    before=codec.clean, after=sync))
     results['ratio'][i] = codec.ratio()
     codec.deconfigure()
-    results['decompress'][i] = reduce(vtimeit(codec.decompress, setup=codec.decompress))
-    results['dc_no_cache'][i] = reduce(vtimeit(codec.decompress, before=drop_caches))
+    results['decompress'][i] = reduce(vtimeit(codec.decompress,
+                                      setup=codec.decompress))
+    results['dc_no_cache'][i] = reduce(vtimeit(codec.decompress,
+                                       before=drop_caches))
+
+    codec.clean()
     pbar.update(i)
 
 pbar.finish()
