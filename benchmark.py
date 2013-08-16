@@ -113,7 +113,6 @@ class BloscpackRunner(AbstractRunner):
                                'max_app_chunks': 0}
         self.filename = 'array.blp'
 
-
     def compress(self):
         bp.pack_ndarray_file(self.ndarray, self.storage,
                              blosc_args=self.blosc_args,
@@ -135,6 +134,7 @@ class NPZRunner(AbstractRunner):
     def decompress(self):
         it = np.load(self.storage)['arr_0']
 
+
 class NPYRunner(AbstractRunner):
 
     def __init__(self):
@@ -146,6 +146,7 @@ class NPYRunner(AbstractRunner):
 
     def decompress(self):
         it = np.load(self.storage)
+
 
 class ZFileRunner(AbstractRunner):
 
