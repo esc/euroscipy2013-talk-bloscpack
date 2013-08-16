@@ -1,9 +1,6 @@
 import abc
 import gc
-import io
-import itertools
 import os
-import sys
 from time import time
 from collections import OrderedDict as od
 
