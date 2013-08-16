@@ -1,3 +1,4 @@
+import abc
 import gc
 import io
 import itertools
@@ -9,6 +10,7 @@ import numpy as np
 from numpy.random import randn
 import pandas as pd
 import bloscpack as bp
+import joblib as jb
 
 
 def noop():
@@ -69,15 +71,17 @@ def reduce(result):
     return result.mean(axis=1).min()
 
 
-class BloscpackRunner(object):
+class AbstractRunner(object):
 
-    def __init__(self):
-        self.name = 'bloscpack'
-        self.blosc_args = bp.DEFAULT_BLOSC_ARGS
-        self.bloscpack_args = bp.DEFAULT_BLOSCPACK_ARGS
-        self.bloscpack_args = {'offsets': False,
-                               'checksum': 'None',
-                               'max_app_chunks': 0}
+    _metaclass__ = abc.ABCMeta
+
+    @abc.abstractmethod
+    def compress(self):
+        pass
+
+    @abc.abstractmethod
+    def decompress(self):
+        pass
 
     def clean(self):
         if os.path.isfile(self.storage):
@@ -91,11 +95,24 @@ class BloscpackRunner(object):
 
     def configure(self, ndarray, storage):
         self.ndarray = ndarray
-        self.storage = os.path.join(storage, 'array.blp')
+        self.storage = os.path.join(storage, self.filename)
 
     def ratio(self):
         return (float(os.path.getsize(self.storage)) /
                 (self.ndarray.size * self.ndarray.dtype.itemsize))
+
+
+class BloscpackRunner(AbstractRunner):
+
+    def __init__(self):
+        self.name = 'bloscpack'
+        self.blosc_args = bp.DEFAULT_BLOSC_ARGS
+        self.bloscpack_args = bp.DEFAULT_BLOSCPACK_ARGS
+        self.bloscpack_args = {'offsets': False,
+                               'checksum': 'None',
+                               'max_app_chunks': 0}
+        self.filename = 'array.blp'
+
 
     def compress(self):
         bp.pack_ndarray_file(self.ndarray, self.storage,
@@ -104,6 +121,45 @@ class BloscpackRunner(object):
 
     def decompress(self):
         it = bp.unpack_ndarray_file(self.storage)
+
+
+class NPZRunner(AbstractRunner):
+
+    def __init__(self):
+        self.name = 'npz'
+        self.filename = 'array.npz'
+
+    def compress(self):
+        np.savez_compressed(self.storage, self.ndarray)
+
+    def decompress(self):
+        it = np.load(self.storage)['arr_0']
+
+class NPYRunner(AbstractRunner):
+
+    def __init__(self):
+        self.name = 'npy'
+        self.filename = 'array.npy'
+
+    def compress(self):
+        np.save(self.storage, self.ndarray)
+
+    def decompress(self):
+        it = np.load(self.storage)
+
+class ZFileRunner(AbstractRunner):
+
+    def __init__(self):
+        self.name = 'npy'
+        self.filename = 'array.npy'
+
+    def compress(self):
+        jb.dump(self.ndarray, self.storage, compress=3, cache_size=0)
+
+    def decompress(self):
+        it = jb.load(self.storage)
+
+
 
 ssd = '/tmp/bench'
 sd = '/mnt/sd/bench'
