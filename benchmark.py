@@ -3,9 +3,11 @@ import gc
 import io
 import itertools
 import os
+import sys
 from time import time
 from collections import OrderedDict as od
 
+import progressbar as pbar
 import numpy as np
 from numpy.random import randn
 import pandas as pd
@@ -167,7 +169,7 @@ class ZFileRunner(AbstractRunner):
 ssd = '/tmp/bench'
 sd = '/mnt/sd/bench'
 dataset_sizes = od([('small', 1e4),])
-                  #  ('medium', 1e7),
+                  #  ('mid', 1e7),
                   #  ('large', 2e8),
                   #  ])
 storage_types = od([('ssd', ssd)])
@@ -188,36 +190,51 @@ codec_levels = od([('bloscpack', [1, 3, 7, 9]),
                    ])
 
 columns = ['size',
-           'entropy',
            'storage',
+           'entropy',
            'codec',
            'level',
            'compress',
            'decompress',
-           'decompress w/o cache'
+           'dc_no_cache',
            'ratio'
            ]
 
 sets = []
+# can't use itertools.product, because level depends on codec
 for size in dataset_sizes:
     for type_ in storage_types:
         for entropy in entropy_types:
             for codec in codecs:
                 for level in codec_levels[codec]:
                     sets.append((size, type_, entropy, codec, level))
-print sets
 
-#results = pd.DataFrame()
+n = len(sets)
+colum_values =od(zip(columns, zip(*sets)))
+colum_values['compress'] = np.empty(n)
+colum_values['decompress'] = np.empty(n)
+colum_values['dc_no_cache'] = np.empty(n)
+colum_values['ratio'] = np.empty(n)
+
+results = pd.DataFrame(colum_values)
+
+widgets = ['Benchmark: ', pbar.Percentage(), ' ', pbar.Bar(marker='-'),
+           ' ', pbar.AdaptiveETA(), ' ', ]
+pbar = pbar.ProgressBar(widgets=widgets, maxval=n).start()
 
 for i, it in enumerate(sets):
-    print it
     size, storage, entropy, codec, level = it
     codec = codecs[codec]
     codec.configure(entropy_types[entropy](dataset_sizes[size]),
                     storage_types[storage], level)
-    print reduce(vtimeit(codec.compress, setup=codec.compress,
+    results['compress'][i] = reduce(vtimeit(codec.compress, setup=codec.compress,
                  before=codec.clean, after=sync))
-    print codec.ratio()
+    results['ratio'][i] = codec.ratio()
     codec.deconfigure()
-    print reduce(vtimeit(codec.decompress, setup=codec.decompress))
-    print reduce(vtimeit(codec.decompress, before=drop_caches))
+    results['decompress'][i] = reduce(vtimeit(codec.decompress, setup=codec.decompress))
+    results['dc_no_cache'][i] = reduce(vtimeit(codec.decompress, before=drop_caches))
+    pbar.update(i)
+
+pbar.finish()
+print results
+results.to_csv('results.csv')
