@@ -238,11 +238,16 @@ colum_values['ratio'] = np.empty(n)
 
 results = pd.DataFrame(colum_values)
 
+
 class Counter(pbar.Widget):
     """Displays the current count."""
 
     def update(self, pbar):
-        return str(sets[pbar.currval])
+        try:
+            return str(sets[pbar.currval-1])
+        except IndexError:
+            return ''
+
 
 widgets = ['Benchmark: ', pbar.Percentage(), ' ', Counter() ,' ',pbar.Bar(marker='-'),
            ' ', pbar.AdaptiveETA(), ' ', ]
