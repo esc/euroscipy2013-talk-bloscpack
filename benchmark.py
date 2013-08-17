@@ -255,18 +255,34 @@ pbar = pbar.ProgressBar(widgets=widgets, maxval=n).start()
 
 for i, it in enumerate(sets):
     size, storage, entropy, codec, level = it
+
+    if size == 'small':
+        number = 5
+        repeat = 3
+    elif size == 'mid' and codec != 'zfile':
+        number = 2
+        repeat = 2
+    else:
+        number = 1
+        repeat = 1
+
     codec = codecs[codec]
     codec.configure(entropy_types[entropy](dataset_sizes[size]),
                     storage_types[storage], level)
+
+
     results['compress'][i] = reduce(vtimeit(codec.compress,
                                     setup=codec.compress,
-                                    before=codec.clean, after=sync))
+                                    before=codec.clean, after=sync,
+                                    number=number, repeat=repeat))
     results['ratio'][i] = codec.ratio()
     codec.deconfigure()
     results['decompress'][i] = reduce(vtimeit(codec.decompress,
-                                      setup=codec.decompress))
+                                      setup=codec.decompress,
+                                      number=number, repeat=repeat))
     results['dc_no_cache'][i] = reduce(vtimeit(codec.decompress,
-                                       before=drop_caches))
+                                       before=drop_caches,
+                                       number=number, repeat=repeat))
 
     codec.clean()
     pbar.update(i)
