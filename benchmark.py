@@ -51,7 +51,9 @@ def make_simple_dataset(size):
 
 
 def make_complex_dataset(size):
-    x = np.linspace(0, np.pi*16, size)
+    x = np.linspace(0, np.pi*2, 1e3)
+    x = np.tile(x, size / len(x))
+    assert len(x) == size
     y = np.sin(x)
     del x
     noise = np.random.randint(-1, 1, size) / 1e8
