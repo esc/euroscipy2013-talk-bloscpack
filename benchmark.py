@@ -157,11 +157,31 @@ class ZFileRunner(AbstractRunner):
         self.name = 'npy'
         self.filename = 'array.npy'
 
+    @property
+    def storage_size(self):
+        return os.path.getsize(self.storage) + os.path.getsize(self.real_data)
+
+    @property
+    def real_data(self):
+        return self.storage + '_01.npy.z'
+
+    def clean(self):
+        if os.path.isfile(self.storage):
+            os.remove(self.storage)
+        if os.path.isfile(self.real_data):
+            os.remove(self.real_data)
+        sync()
+        drop_caches
+
     def compress(self):
         jb.dump(self.ndarray, self.storage, compress=self.level, cache_size=0)
 
     def decompress(self):
         it = jb.load(self.storage)
+
+    def ratio(self):
+        return (float(self.storage_size) /
+                (self.ndarray.size * self.ndarray.dtype.itemsize))
 
 
 ssd = '/tmp/bench'
@@ -186,7 +206,7 @@ codecs = od([('bloscpack', BloscpackRunner()),
 codec_levels = od([('bloscpack', [1, 3, 7, 9]),
                    ('npz', [1, ]),
                    ('npy', [0, ]),
-                   ('zfile', [1, 3, 7, 9]),
+                   ('zfile', [1, 3, 7]),
                    ])
 
 columns = ['size',
