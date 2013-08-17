@@ -257,10 +257,10 @@ for i, it in enumerate(sets):
     size, storage, entropy, codec, level = it
 
     if size == 'small':
-        number = 5
-        repeat = 3
+        number = 10
+        repeat = 4
     elif size == 'mid' and codec != 'zfile':
-        number = 2
+        number = 3
         repeat = 2
     else:
         number = 1
