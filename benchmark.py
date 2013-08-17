@@ -118,7 +118,7 @@ class BloscpackRunner(AbstractRunner):
         blosc_args = self.blosc_args.copy()
         blosc_args['clevel'] = self.level
         bp.pack_ndarray_file(self.ndarray, self.storage,
-                             blosc_args=self.blosc_args,
+                             blosc_args=blosc_args,
                              bloscpack_args=self.bloscpack_args)
 
     def decompress(self):
