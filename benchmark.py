@@ -262,9 +262,11 @@ for i, it in enumerate(sets):
     elif size == 'mid' and codec != 'zfile':
         number = 3
         repeat = 2
-    else:
+    elif size == 'large':
         number = 1
         repeat = 1
+    else:
+        raise RuntimeError("No such size: '%s'" % size)
 
     codec = codecs[codec]
     codec.configure(entropy_types[entropy](dataset_sizes[size]),
