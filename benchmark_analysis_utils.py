@@ -27,3 +27,14 @@ def plot_codec_comp( storage, codecs):
         ax[i, 1].set_title('medium size - %s entropy' % ent)
         it_large.ix[ent].plot(kind='barh', ax=ax[i, 2], legend=None)
         ax[i, 2].set_title('large size - %s entropy' % ent)
+
+def plot_ratio(size, entropy, storage='ssd', ax=None):
+    it = df
+    it = it[it['storage'] == 'ssd']
+    it = it[it['size'] == size]
+    it = it[it['entropy'] == entropy]
+    it = it[['level', 'codec', 'ratio']]
+    it = it.set_index(['codec', 'level'])
+    it.plot(kind='barh', figsize=(15, 8), ax=ax, legend=False,
+            title="size: '%s' entropy: '%s'" % (size, entropy))
+
