@@ -15,10 +15,10 @@ def result_filter(storage, size, codecs):
     it = it.set_index(['entropy', 'codec', 'level'])
     return it
 
-def plot_codec_comp(codecs):
-    it_small = result_filter('ssd', 'small', codecs)
-    it_medium = result_filter('ssd', 'mid', codecs)
-    it_large = result_filter('ssd', 'large', codecs)
+def plot_codec_comp( storage, codecs):
+    it_small = result_filter(storage, 'small', codecs)
+    it_medium = result_filter(storage, 'mid', codecs)
+    it_large = result_filter(storage, 'large', codecs)
     fig, ax = plt.subplots(nrows=3, ncols=3, figsize=(15,15), sharey=True)
     for i, ent in enumerate(['low', 'medium', 'high']):
         it_small.ix[ent].plot(kind='barh', ax=ax[i, 0], legend=None)
