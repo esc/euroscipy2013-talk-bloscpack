@@ -1,7 +1,7 @@
 Notes
 -----
 
-The benchmarks in `results.csv` were run on my Lenov Carbon X1 which has a
+The benchmarks in `results.csv` were run on my Lenovo Carbon X1 which has a
 Intel Core i7 3667u 2 cores / 4 threads clocked at 2.0 Ghz / thread
 
 * Sizes:
