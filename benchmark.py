@@ -1,3 +1,9 @@
+#!/usr/bin/env python
+# encoding: utf-8
+
+""" Benchmarking utilities for comparing different Numpy array serialization
+tools. """
+
 import abc
 import gc
 import os
