@@ -265,7 +265,7 @@ for i, it in enumerate(sets):
     if size == 'small':
         number = 10
         repeat = 4
-    elif size == 'mid' and codec != 'zfile':
+    elif size == 'mid' or codec != 'zfile':
         number = 3
         repeat = 2
     elif size == 'large':
