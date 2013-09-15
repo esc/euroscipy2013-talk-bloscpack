@@ -17,10 +17,15 @@ import pandas as pd
 import bloscpack as bp
 import joblib as jb
 import sh
+import yaml
 
 
 def noop():
     pass
+
+
+def gen_results_filename():
+    return 'results_' + str(int(time()))
 
 
 def extract_config():
@@ -278,8 +283,15 @@ class ZFileRunner(AbstractRunner):
 
 if __name__ == '__main__':
 
+    result_file_name = gen_results_filename()
+    conf = yaml.dump(extract_config(), default_flow_style=False)
+    print conf
+    with open(result_file_name + '.info.yaml', 'w') as fp:
+        fp.write(conf)
+
     ssd = '/tmp/bench'
     sd = '/mnt/sd/bench'
+
     dataset_sizes = od([('small', 1e4),
                         ('mid', 1e7),
                         ('large', 2e8),
