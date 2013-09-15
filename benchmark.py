@@ -286,6 +286,7 @@ if __name__ == '__main__':
 
     success = False
 
+    # handle configuration
     result_file_name = gen_results_filename()
     conf = yaml.dump(extract_config(), default_flow_style=False)
     print conf
@@ -294,6 +295,7 @@ if __name__ == '__main__':
         fp.write(conf)
     print 'config saved to: ' + conf_file
 
+    # configure and check locations
     ssd = '/tmp/bench'
     sd = '/mnt/sd/bench'
 
@@ -301,6 +303,7 @@ if __name__ == '__main__':
         if not os.path.isdir(location):
             raise Exception("Path: '%s' does not exist!" % location)
 
+    # set up experimental parameters
     dataset_sizes = od([('small', 1e4),
                         ('mid', 1e7),
                         ('large', 2e8),
@@ -344,6 +347,7 @@ if __name__ == '__main__':
                     for level in codec_levels[codec]:
                         sets.append((size, type_, entropy, codec, level))
 
+    # setup output DataFrame
     n = len(sets)
     colum_values = od(zip(columns, zip(*sets)))
     colum_values['compress'] = np.zeros(n)
@@ -353,14 +357,15 @@ if __name__ == '__main__':
 
     results = pd.DataFrame(colum_values)
 
+    # define an atexit handler in case something goes wrong
     def temp_result():
         if not success:
             result_csv = 'TEMPORARY_RESULTS.csv'
             results.to_csv(result_csv)
             print 'ABORT: results acquired sofar saved to: ' + result_csv
-
     atexit.register(temp_result)
 
+    # setup the progressbar
     class Counter(pbar.Widget):
         """Displays the current count."""
 
@@ -381,9 +386,9 @@ if __name__ == '__main__':
                pbar.AdaptiveETA(),
                ' ',
                ]
-
     pbar = pbar.ProgressBar(widgets=widgets, maxval=n).start()
 
+    # go johnny go, go!
     for i, it in enumerate(sets):
         size, storage, entropy, codec, level = it
 
