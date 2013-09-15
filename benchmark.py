@@ -284,6 +284,8 @@ class ZFileRunner(AbstractRunner):
 
 if __name__ == '__main__':
 
+    success = False
+
     result_file_name = gen_results_filename()
     conf = yaml.dump(extract_config(), default_flow_style=False)
     print conf
@@ -352,9 +354,10 @@ if __name__ == '__main__':
     results = pd.DataFrame(colum_values)
 
     def temp_result():
-        result_csv = 'TEMPORARY_RESULTS.csv'
-        results.to_csv(result_csv)
-        print 'ABORT: results acquired sofar saved to: ' + result_csv
+        if not success:
+            result_csv = 'TEMPORARY_RESULTS.csv'
+            results.to_csv(result_csv)
+            print 'ABORT: results acquired sofar saved to: ' + result_csv
 
     atexit.register(temp_result)
 
@@ -418,6 +421,7 @@ if __name__ == '__main__':
         pbar.update(i)
 
     pbar.finish()
-    result_csv = result_file_name + '.csv'
+    success = True
     results.to_csv(result_csv)
+    result_csv = result_file_name + '.csv'
     print 'results saved to: ' + result_csv
