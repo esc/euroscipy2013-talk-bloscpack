@@ -243,112 +243,113 @@ class ZFileRunner(AbstractRunner):
         return (float(self.storage_size) /
                 (self.ndarray.size * self.ndarray.dtype.itemsize))
 
+if __name__ == '__main__':
 
-ssd = '/tmp/bench'
-sd = '/mnt/sd/bench'
-dataset_sizes = od([('small', 1e4),
-                    ('mid', 1e7),
-                    ('large', 2e8),
+    ssd = '/tmp/bench'
+    sd = '/mnt/sd/bench'
+    dataset_sizes = od([('small', 1e4),
+                        ('mid', 1e7),
+                        ('large', 2e8),
+                        ])
+    storage_types = od([('ssd', ssd),
+                        ('sd', sd),
+                        ])
+    entropy_types = od([('low', make_simple_dataset),
+                        ('medium', make_complex_dataset),
+                        ('high', make_random_dataset),
+                        ])
+    codecs = od([('bloscpack', BloscpackRunner()),
+                ('npz', NPZRunner()),
+                ('npy', NPYRunner()),
+                ('zfile', ZFileRunner()),
+                ])
+
+    codec_levels = od([('bloscpack', [1, 3, 7, 9]),
+                    ('npz', [1, ]),
+                    ('npy', [0, ]),
+                    ('zfile', [1, 3, 7]),
                     ])
-storage_types = od([('ssd', ssd),
-                    ('sd', sd),
-                    ])
-entropy_types = od([('low', make_simple_dataset),
-                    ('medium', make_complex_dataset),
-                    ('high', make_random_dataset),
-                    ])
-codecs = od([('bloscpack', BloscpackRunner()),
-             ('npz', NPZRunner()),
-             ('npy', NPYRunner()),
-             ('zfile', ZFileRunner()),
-             ])
 
-codec_levels = od([('bloscpack', [1, 3, 7, 9]),
-                   ('npz', [1, ]),
-                   ('npy', [0, ]),
-                   ('zfile', [1, 3, 7]),
-                   ])
+    columns = ['size',
+            'storage',
+            'entropy',
+            'codec',
+            'level',
+            'compress',
+            'decompress',
+            'dc_no_cache',
+            'ratio'
+            ]
 
-columns = ['size',
-           'storage',
-           'entropy',
-           'codec',
-           'level',
-           'compress',
-           'decompress',
-           'dc_no_cache',
-           'ratio'
-           ]
+    sets = []
+    # can't use itertools.product, because level depends on codec
+    for size in dataset_sizes:
+        for type_ in storage_types:
+            for entropy in entropy_types:
+                for codec in codecs:
+                    for level in codec_levels[codec]:
+                        sets.append((size, type_, entropy, codec, level))
 
-sets = []
-# can't use itertools.product, because level depends on codec
-for size in dataset_sizes:
-    for type_ in storage_types:
-        for entropy in entropy_types:
-            for codec in codecs:
-                for level in codec_levels[codec]:
-                    sets.append((size, type_, entropy, codec, level))
+    n = len(sets)
+    colum_values = od(zip(columns, zip(*sets)))
+    colum_values['compress'] = np.empty(n)
+    colum_values['decompress'] = np.empty(n)
+    colum_values['dc_no_cache'] = np.empty(n)
+    colum_values['ratio'] = np.empty(n)
 
-n = len(sets)
-colum_values = od(zip(columns, zip(*sets)))
-colum_values['compress'] = np.empty(n)
-colum_values['decompress'] = np.empty(n)
-colum_values['dc_no_cache'] = np.empty(n)
-colum_values['ratio'] = np.empty(n)
-
-results = pd.DataFrame(colum_values)
+    results = pd.DataFrame(colum_values)
 
 
-class Counter(pbar.Widget):
-    """Displays the current count."""
+    class Counter(pbar.Widget):
+        """Displays the current count."""
 
-    def update(self, pbar):
-        try:
-            return str(sets[pbar.currval-1])
-        except IndexError:
-            return ''
-
-
-widgets = ['Benchmark: ', pbar.Percentage(), ' ', Counter() ,' ',pbar.Bar(marker='-'),
-           ' ', pbar.AdaptiveETA(), ' ', ]
-pbar = pbar.ProgressBar(widgets=widgets, maxval=n).start()
-
-for i, it in enumerate(sets):
-    size, storage, entropy, codec, level = it
-
-    if size == 'small':
-        number = 10
-        repeat = 4
-    elif size == 'mid' or codec != 'zfile':
-        number = 3
-        repeat = 2
-    elif size == 'large':
-        number = 1
-        repeat = 1
-    else:
-        raise RuntimeError("No such size: '%s'" % size)
-
-    codec = codecs[codec]
-    codec.configure(entropy_types[entropy](dataset_sizes[size]),
-                    storage_types[storage], level)
+        def update(self, pbar):
+            try:
+                return str(sets[pbar.currval-1])
+            except IndexError:
+                return ''
 
 
-    results['compress'][i] = reduce(vtimeit(codec.compress,
-                                    setup=codec.compress,
-                                    before=codec.clean, after=sync,
-                                    number=number, repeat=repeat))
-    results['ratio'][i] = codec.ratio()
-    codec.deconfigure()
-    results['decompress'][i] = reduce(vtimeit(codec.decompress,
-                                      setup=codec.decompress,
-                                      number=number, repeat=repeat))
-    results['dc_no_cache'][i] = reduce(vtimeit(codec.decompress,
-                                       before=drop_caches,
-                                       number=number, repeat=repeat))
+    widgets = ['Benchmark: ', pbar.Percentage(), ' ', Counter() ,' ',pbar.Bar(marker='-'),
+            ' ', pbar.AdaptiveETA(), ' ', ]
+    pbar = pbar.ProgressBar(widgets=widgets, maxval=n).start()
 
-    codec.clean()
-    pbar.update(i)
+    for i, it in enumerate(sets):
+        size, storage, entropy, codec, level = it
 
-pbar.finish()
-print results
-results.to_csv('results.csv')
+        if size == 'small':
+            number = 10
+            repeat = 4
+        elif size == 'mid' or codec != 'zfile':
+            number = 3
+            repeat = 2
+        elif size == 'large':
+            number = 1
+            repeat = 1
+        else:
+            raise RuntimeError("No such size: '%s'" % size)
+
+        codec = codecs[codec]
+        codec.configure(entropy_types[entropy](dataset_sizes[size]),
+                        storage_types[storage], level)
+
+
+        results['compress'][i] = reduce(vtimeit(codec.compress,
+                                        setup=codec.compress,
+                                        before=codec.clean, after=sync,
+                                        number=number, repeat=repeat))
+        results['ratio'][i] = codec.ratio()
+        codec.deconfigure()
+        results['decompress'][i] = reduce(vtimeit(codec.decompress,
+                                        setup=codec.decompress,
+                                        number=number, repeat=repeat))
+        results['dc_no_cache'][i] = reduce(vtimeit(codec.decompress,
+                                        before=drop_caches,
+                                        number=number, repeat=repeat))
+
+        codec.clean()
+        pbar.update(i)
+
+    pbar.finish()
+    print results
+    results.to_csv('results.csv')
