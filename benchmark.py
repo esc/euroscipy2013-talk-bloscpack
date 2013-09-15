@@ -5,6 +5,7 @@
 tools. """
 
 import abc
+import atexit
 import gc
 import os
 from time import time
@@ -343,12 +344,19 @@ if __name__ == '__main__':
 
     n = len(sets)
     colum_values = od(zip(columns, zip(*sets)))
-    colum_values['compress'] = np.empty(n)
-    colum_values['decompress'] = np.empty(n)
-    colum_values['dc_no_cache'] = np.empty(n)
-    colum_values['ratio'] = np.empty(n)
+    colum_values['compress'] = np.zeros(n)
+    colum_values['decompress'] = np.zeros(n)
+    colum_values['dc_no_cache'] = np.zeros(n)
+    colum_values['ratio'] = np.zeros(n)
 
     results = pd.DataFrame(colum_values)
+
+    def temp_result():
+        result_csv = 'TEMPORARY_RESULTS.csv'
+        results.to_csv(result_csv)
+        print 'ABORT: results acquired sofar saved to: ' + result_csv
+
+    atexit.register(temp_result)
 
     class Counter(pbar.Widget):
         """Displays the current count."""
@@ -361,7 +369,8 @@ if __name__ == '__main__':
 
     widgets = ['Benchmark: ',
                pbar.Percentage(),
-               ' ', Counter(),
+               ' ',
+               Counter(),
                ' ',
                pbar.Bar(marker='-'),
                ' ',
