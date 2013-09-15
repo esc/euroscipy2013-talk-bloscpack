@@ -403,5 +403,6 @@ if __name__ == '__main__':
         pbar.update(i)
 
     pbar.finish()
-    print results
-    results.to_csv('results.csv')
+    result_csv = result_file_name + '.csv'
+    results.to_csv(result_csv)
+    print 'results saved to: ' + result_csv
