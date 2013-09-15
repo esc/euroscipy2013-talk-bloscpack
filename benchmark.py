@@ -376,13 +376,13 @@ if __name__ == '__main__':
 
         if size == 'small':
             number = 10
-            repeat = 4
-        elif size == 'mid' or codec != 'zfile':
-            number = 3
-            repeat = 2
+            repeat = 10
+        elif size == 'mid':
+            number = 5
+            repeat = 5
         elif size == 'large':
-            number = 1
-            repeat = 1
+            number = 3
+            repeat = 3
         else:
             raise RuntimeError("No such size: '%s'" % size)
 
