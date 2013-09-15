@@ -16,11 +16,44 @@ from numpy.random import randn
 import pandas as pd
 import bloscpack as bp
 import joblib as jb
+import sh
 
 
 def noop():
     pass
 
+
+def extract_config():
+
+    def git_sha(base=''):
+        try:
+            return str(sh.git('rev-parse', 'HEAD', _cwd=base)).strip()
+        except Exception:
+            return 'NA'
+
+    config = c = {}
+
+    versions = v = {}
+    v['bloscpack'] = bp.__version__
+    v['numpy']     = np.__version__
+    v['joblib']    = jb.__version__
+    v['conda']     = str(sh.conda('--version', _tty_in=True)).strip()
+    v['python']     = str(sh.python('--version', _tty_in=True)).strip()
+
+    hashes = h = {}
+    h['bloscpack'] = git_sha(os.path.dirname(bp.__file__))
+    h['joblib'] = git_sha(jb.__path__[0])
+    h['numpy'] = git_sha(np.__path__[0])
+    h['benchmark'] = git_sha()
+
+    c['uname'] = str(sh.uname('-a')).strip()
+    c['hostname'] = str(sh.hostname()).strip()
+    c['whoami'] = str(sh.whoami()).strip()
+    c['date'] = str(sh.date()).strip()
+
+    c['versions'] = versions
+    c['hashes'] = hashes
+    return config
 
 def vtimeit(stmt, setup=noop, before=noop, after=noop, repeat=3, number=3):
     """ Specialised version of the timeit utility.
