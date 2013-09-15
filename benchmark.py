@@ -286,11 +286,17 @@ if __name__ == '__main__':
     result_file_name = gen_results_filename()
     conf = yaml.dump(extract_config(), default_flow_style=False)
     print conf
-    with open(result_file_name + '.info.yaml', 'w') as fp:
+    conf_file = result_file_name + '.info.yaml'
+    with open(conf_file, 'w') as fp:
         fp.write(conf)
+    print 'config saved to: ' + conf_file
 
     ssd = '/tmp/bench'
     sd = '/mnt/sd/bench'
+
+    for location in [ssd, sd]:
+        if not os.path.isdir(location):
+            raise Exception("Path: '%s' does not exist!" % location)
 
     dataset_sizes = od([('small', 1e4),
                         ('mid', 1e7),
