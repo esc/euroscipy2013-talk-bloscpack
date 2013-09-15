@@ -97,8 +97,8 @@ def vtimeit(stmt, setup=noop, before=noop, after=noop, repeat=3, number=3):
     """
 
     result = np.empty((repeat, number))
+    setup()
     for i in range(repeat):
-        setup()
         for j in range(number):
             before()
 
