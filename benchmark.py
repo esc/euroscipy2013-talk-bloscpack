@@ -369,9 +369,10 @@ if __name__ == '__main__':
                 return str(sets[pbar.currval-1])
             except IndexError:
                 return ''
-
     widgets = ['Benchmark: ',
                pbar.Percentage(),
+               ' ',
+               pbar.Counter(), '/', str(n),
                ' ',
                Counter(),
                ' ',
