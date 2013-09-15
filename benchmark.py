@@ -259,27 +259,27 @@ if __name__ == '__main__':
                         ('high', make_random_dataset),
                         ])
     codecs = od([('bloscpack', BloscpackRunner()),
-                ('npz', NPZRunner()),
-                ('npy', NPYRunner()),
-                ('zfile', ZFileRunner()),
-                ])
+                 ('npz', NPZRunner()),
+                 ('npy', NPYRunner()),
+                 ('zfile', ZFileRunner()),
+                 ])
 
     codec_levels = od([('bloscpack', [1, 3, 7, 9]),
-                    ('npz', [1, ]),
-                    ('npy', [0, ]),
-                    ('zfile', [1, 3, 7]),
-                    ])
+                       ('npz', [1, ]),
+                       ('npy', [0, ]),
+                       ('zfile', [1, 3, 7]),
+                       ])
 
     columns = ['size',
-            'storage',
-            'entropy',
-            'codec',
-            'level',
-            'compress',
-            'decompress',
-            'dc_no_cache',
-            'ratio'
-            ]
+               'storage',
+               'entropy',
+               'codec',
+               'level',
+               'compress',
+               'decompress',
+               'dc_no_cache',
+               'ratio',
+               ]
 
     sets = []
     # can't use itertools.product, because level depends on codec
@@ -299,7 +299,6 @@ if __name__ == '__main__':
 
     results = pd.DataFrame(colum_values)
 
-
     class Counter(pbar.Widget):
         """Displays the current count."""
 
@@ -309,9 +308,16 @@ if __name__ == '__main__':
             except IndexError:
                 return ''
 
+    widgets = ['Benchmark: ',
+               pbar.Percentage(),
+               ' ', Counter(),
+               ' ',
+               pbar.Bar(marker='-'),
+               ' ',
+               pbar.AdaptiveETA(),
+               ' ',
+               ]
 
-    widgets = ['Benchmark: ', pbar.Percentage(), ' ', Counter() ,' ',pbar.Bar(marker='-'),
-            ' ', pbar.AdaptiveETA(), ' ', ]
     pbar = pbar.ProgressBar(widgets=widgets, maxval=n).start()
 
     for i, it in enumerate(sets):
@@ -333,7 +339,6 @@ if __name__ == '__main__':
         codec.configure(entropy_types[entropy](dataset_sizes[size]),
                         storage_types[storage], level)
 
-
         results['compress'][i] = reduce(vtimeit(codec.compress,
                                         setup=codec.compress,
                                         before=codec.clean, after=sync,
@@ -341,11 +346,13 @@ if __name__ == '__main__':
         results['ratio'][i] = codec.ratio()
         codec.deconfigure()
         results['decompress'][i] = reduce(vtimeit(codec.decompress,
-                                        setup=codec.decompress,
-                                        number=number, repeat=repeat))
+                                                  setup=codec.decompress,
+                                                  number=number,
+                                                  repeat=repeat))
         results['dc_no_cache'][i] = reduce(vtimeit(codec.decompress,
-                                        before=drop_caches,
-                                        number=number, repeat=repeat))
+                                                   before=drop_caches,
+                                                   number=number,
+                                                   repeat=repeat))
 
         codec.clean()
         pbar.update(i)
