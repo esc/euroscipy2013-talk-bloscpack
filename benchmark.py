@@ -23,6 +23,40 @@ def noop():
 
 
 def vtimeit(stmt, setup=noop, before=noop, after=noop, repeat=3, number=3):
+    """ Specialised version of the timeit utility.
+
+    Supports special operations. `setup` is performed once before each set.
+    `before` is performed before each run but IS NOT included in the timing.
+    `after` is performed after each run and IS included in the timing. Garbage
+    collection is disables during runs.
+
+    A `run` is a single a execution of the code to be benchmarked. A set is
+    collection of runs. Usually, one perform a `repeat` of sets with `number`
+    number of runs. Then, the average across runs is taken for each set and the
+    minimum is selected as the final timing value.
+
+    Parameters
+    ----------
+
+    stmt : callable
+        the thing to benchmark
+    setup : callable
+        callable to be executed once before all runs
+    before : callable
+        callable to be executed once before every run
+    after : callable
+        callable to be executed once after every run
+    repeat : int
+        the number of sets
+    number : int
+        the number of runs in each set
+
+    Returns
+    -------
+    results : ndarray
+        2D array with `repeat` rows and `number` columns.
+    """
+
     result = np.empty((repeat, number))
     for i in range(repeat):
         setup()
@@ -45,18 +79,22 @@ def vtimeit(stmt, setup=noop, before=noop, after=noop, repeat=3, number=3):
 
 
 def drop_caches():
+    """ Drop linux file system caches. """
     bp.drop_caches()
 
 
 def sync():
+    """ Sync the linux file system buffers. """
     os.system('sync')
 
 
 def make_simple_dataset(size):
+    """ Make the dataset with low entropy. """
     return np.arange(size)
 
 
 def make_complex_dataset(size):
+    """ Make the dataset with medium entropy. """
     x = np.linspace(0, np.pi*2, 1e3)
     x = np.tile(x, size / len(x))
     assert len(x) == size
@@ -70,46 +108,59 @@ def make_complex_dataset(size):
 
 
 def make_random_dataset(size):
+    """ Make a bunch of random numbers. """
     return randn(size)
 
 
 def reduce(result):
+    """ Reduce the results array from a benchmark into a single value. """
     return result.mean(axis=1).min()
 
 
 class AbstractRunner(object):
+    """ Base class for a codec benchmark. """
 
     _metaclass__ = abc.ABCMeta
 
     @abc.abstractmethod
     def compress(self):
+        """ Implement this to benchmark compression. """
         pass
 
     @abc.abstractmethod
     def decompress(self):
+        """ Implement this to benchmark decompression. """
         pass
 
     def clean(self):
+        """ Delete output, sync the buffers and clean the cache. """
         if os.path.isfile(self.storage):
             os.remove(self.storage)
         sync()
         drop_caches
 
     def deconfigure(self):
+        """ Delete any storage internal to the instantiated object. """
         del self.ndarray
         gc.collect()
 
     def configure(self, ndarray, storage, level):
+        """ Setup the input data, configure output and compression level. """
         self.ndarray = ndarray
         self.storage = os.path.join(storage, self.filename)
         self.level = level
 
     def ratio(self):
+        """ Compute compression ratio. """
         return (float(os.path.getsize(self.storage)) /
                 (self.ndarray.size * self.ndarray.dtype.itemsize))
 
 
 class BloscpackRunner(AbstractRunner):
+    """ Runner for Bloscpack.
+
+    Files are generated without checksums, offsets and no preallocated chunks.
+    """
 
     def __init__(self):
         self.name = 'bloscpack'
@@ -132,6 +183,7 @@ class BloscpackRunner(AbstractRunner):
 
 
 class NPZRunner(AbstractRunner):
+    """ Runner for NPZ. """
 
     def __init__(self):
         self.name = 'npz'
@@ -145,6 +197,7 @@ class NPZRunner(AbstractRunner):
 
 
 class NPYRunner(AbstractRunner):
+    """ Runner for NPY. """
 
     def __init__(self):
         self.name = 'npy'
@@ -158,6 +211,7 @@ class NPYRunner(AbstractRunner):
 
 
 class ZFileRunner(AbstractRunner):
+    """ Runner for ZFile. """
 
     def __init__(self):
         self.name = 'npy'
