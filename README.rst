@@ -10,3 +10,7 @@ analysing benchmarks.
 All materials is licensed under the terms of Creative Commons
 Attribution-ShareAlike 3.0 Unported  `CC BY-SA 3.0
 <http://creativecommons.org/licenses/by-sa/3.0/>`_
+
+The exact version used at the EuroScipy2013 can be found at the tag
+euroscipy2013. All modifications beyond this point were made to support the
+paper for the proceedings.
