@@ -1,0 +1,15 @@
+date: Sat Sep 21 10:03:28 CEST 2013
+hashes:
+  benchmark: 7562c6d776d920933fc90d0b0c7c1f4dd7914e46
+  bloscpack: 6a984cc9b72a3f8fe90ed2a826d1ed6ca8e211dd
+  joblib: 0cfdb88773779fd17361123376b04487456933a9
+  numpy: NA
+hostname: toolbox
+uname: 'Linux toolbox 3.9-0.bpo.1-amd64 #1 SMP Debian 3.9.6-1~bpo70+1 x86_64 GNU/Linux'
+versions:
+  bloscpack: 0.4.0
+  conda: conda 1.8.1
+  joblib: 0.7.1
+  numpy: 1.7.1
+  python: 'Python 2.7.5 :: Anaconda 1.6.1 (64-bit)'
+whoami: root
